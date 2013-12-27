@@ -1,0 +1,7 @@
+Nock/bin
+Nock/obj
+NockTest/bin
+NockTest/obj
+*.suo
+*.ncrunchsolution
+*.user
