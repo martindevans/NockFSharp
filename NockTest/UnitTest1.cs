@@ -160,7 +160,7 @@ namespace NockTest
         [TestMethod]
         public void TarIncrement()
         {
-            var result = Nock.Nock.tar(N(42, N(4, 0, 1)));
+            var result = Nock.Nock.tar(N(42, 4, 0, 1));
 
             Assert.IsInstanceOfType(result, typeof(Nn.Atom));
             Assert.AreEqual(43, ((Nn.Atom)result).Item);
@@ -206,7 +206,7 @@ namespace NockTest
             // Substitution:    ?1
             // Produces to:     1
 
-            var result = Nock.Nock.tar(N(1, N(3, 0, 1)));
+            var result = Nock.Nock.tar(N(1, 3, 0, 1));
 
             Assert.IsInstanceOfType(result, typeof(Nn.Atom));
             Assert.AreEqual(N(1), result);
@@ -285,7 +285,7 @@ namespace NockTest
         [TestMethod]
         public void BasicNockTest2()
         {
-            var result = Nock.Nock.tar(N(N(132, 19), N(10, N(37, N(4, N(0, 3))))));
+            var result = Nock.Nock.tar(N(N(132, 19), N(10, 37, 4, 0, 3)));
 
             Assert.IsInstanceOfType(result, typeof(Nn.Atom));
             Assert.AreEqual(20, ((Nn.Atom) result).Item);
@@ -303,7 +303,7 @@ namespace NockTest
         [TestMethod]
         public void BasicNockTest4()
         {
-            var result = Nock.Nock.tar(N(41, N(1, 153, 218)));
+            var result = Nock.Nock.tar(N(41, 1, 153, 218));
 
             Assert.IsInstanceOfType(result, typeof(Nn.Cell));
             Assert.AreEqual(N(153, 218), result);
