@@ -46,13 +46,13 @@ module Nock =
     let rec tar noun : noun = 
         match noun with
         | Cell (a, Cell(Cell(b, c), d)) ->
-            //Cell(tar(Cell(a, Cell(b, c))), tar(Cell(a, d)))                                   // *[a [b c] d]     [*[a b c] *[a d]]
-            AsyncCell((fun _ -> tar(Cell(a, Cell(b, c)))), (fun _ -> tar(Cell(a, d))))
+            Cell(tar(Cell(a, Cell(b, c))), tar(Cell(a, d)))                                   // *[a [b c] d]     [*[a b c] *[a d]]
+            //AsyncCell((fun _ -> tar(Cell(a, Cell(b, c)))), (fun _ -> tar(Cell(a, d))))
         | Cell (a, Cell(Atom(0), b)) -> fas(Cell(b, a))                                         // *[a 0 b]         /[b a]
         | Cell (a, Cell(Atom(1), b)) -> b                                                       // *[a 1 b]         b
         | Cell (a, Cell(Atom(2), Cell(b, c))) -> 
-            //tar(Cell(tar(Cell(a, b)), tar(Cell(a, c))))                                       // *[a 2 b c]       *[*[a b] *[a c]]
-            tar(AsyncCell((fun _ -> tar(Cell(a, b))), (fun _ -> tar(Cell(a, c)))));
+            tar(Cell(tar(Cell(a, b)), tar(Cell(a, c))))                                       // *[a 2 b c]       *[*[a b] *[a c]]
+            //tar(AsyncCell((fun _ -> tar(Cell(a, b))), (fun _ -> tar(Cell(a, c)))));
         | Cell (a, Cell(Atom(3), b)) -> wut(tar(Cell(a, b)))                                    // *[a 3 b]         ?*[a b]
         | Cell (a, Cell(Atom(4), b)) -> lus(tar(Cell(a, b)))                                    // *[a 4 b]         +*[a b]
         | Cell (a, Cell(Atom(5), b)) -> tis(tar(Cell(a, b)))                                    // *[a 5 b]         =*[a b]
