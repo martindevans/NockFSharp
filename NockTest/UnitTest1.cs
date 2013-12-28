@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Linq;
-using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Nn = Nock.Nock.noun;
 
@@ -20,62 +19,31 @@ namespace NockTest
             return Nock.Nock.noun.NewCell(a, b);
         }
 
-        private static Nock.Nock.noun N(int a, Nock.Nock.noun b)
-        {
-            return Nock.Nock.noun.NewCell(N(a), b);
-        }
-
-        private static Nock.Nock.noun N(Nock.Nock.noun a, int b)
-        {
-            return Nock.Nock.noun.NewCell(a, N(b));
-        }
-
-        private static Nock.Nock.noun N(int a, int b)
-        {
-            return Nock.Nock.noun.NewCell(N(a), N(b));
-        }
-
-        private static Nock.Nock.noun N(Nock.Nock.noun a, Nock.Nock.noun b, Nock.Nock.noun c)
-        {
-            return N(a, N(b, c));
-        }
-
-        private static Nock.Nock.noun N(Nock.Nock.noun a, Nock.Nock.noun b, int c)
-        {
-            return N(a, N(b, c));
-        }
-
-        private static Nock.Nock.noun N(Nock.Nock.noun a, int b, Nock.Nock.noun c)
-        {
-            return N(a, N(b, c));
-        }
-
-        private static Nock.Nock.noun N(Nock.Nock.noun a, int b, int c)
-        {
-            return N(a, N(b, c));
-        }
-
-        private static Nock.Nock.noun N(int a, Nock.Nock.noun b, Nock.Nock.noun c)
-        {
-            return N(a, N(b, c));
-        }
-
-        private static Nock.Nock.noun N(int a, Nock.Nock.noun b, int c)
-        {
-            return N(a, N(b, c));
-        }
-
-        private static Nock.Nock.noun N(int a, int b, Nock.Nock.noun c)
-        {
-            return N(a, N(b, c));
-        }
-
         private static Nock.Nock.noun N(params int[] values)
+        {
+            return N(values.Select(N).ToArray());
+        }
+
+        private static Nock.Nock.noun N(params Nock.Nock.noun[] values)
         {
             if (values.Length == 2)
                 return N(values[0], values[1]);
             else
                 return N(values[0], N(values.Skip(1).ToArray()));
+        }
+
+        private static Nock.Nock.noun N(params object[] values)
+        {
+            return N(values.Select(v =>
+            {
+                var noun = v as Nn;
+                if (noun != null)
+                    return noun;
+                else if (v is int)
+                    return N((int)v);
+                else
+                    throw new ArgumentException("Invalid noun type");
+            }).ToArray());
         }
         #endregion
 
@@ -339,6 +307,15 @@ namespace NockTest
 
             Assert.IsInstanceOfType(result, typeof(Nn.Cell));
             Assert.AreEqual(N(153, 218), result);
+        }
+
+        [TestMethod]
+        public void Decrement()
+        {
+            var n = N(42, N(8, N(1, 0), 8, N(1, 6, N(5, N(0, 7), 4, 0, 6), N(0, 6), 9, 2, N(0, 2), N(4, 0, 6), 0, 7), 9, 2, 0, 1));
+            var result = Nock.Nock.tar(n);
+
+            Assert.AreEqual(N(41), result);
         }
     }
 }
