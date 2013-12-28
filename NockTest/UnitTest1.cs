@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Nn = Nock.Nock.noun;
@@ -69,9 +70,12 @@ namespace NockTest
             return N(a, N(b, c));
         }
 
-        private static Nock.Nock.noun N(int a, int b, int c)
+        private static Nock.Nock.noun N(params int[] values)
         {
-            return N(a, N(b, c));
+            if (values.Length == 2)
+                return N(values[0], values[1]);
+            else
+                return N(values[0], N(values.Skip(1).ToArray()));
         }
         #endregion
 
@@ -175,19 +179,139 @@ namespace NockTest
             Assert.IsInstanceOfType(result, typeof(Nock.Nock.noun.Cell));
             Assert.AreEqual(N(42, 0), result);
         }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentException))]
+        public void FasThrowsOnInvalid()
+        {
+            Nock.Nock.fas(N(N(1, 2), N(3, 4)));
+        }
         #endregion
 
         #region Tar test
+        [TestMethod]
+        public void TarIncrement()
+        {
+            var result = Nock.Nock.tar(N(42, N(4, 0, 1)));
 
+            Assert.IsInstanceOfType(result, typeof(Nn.Atom));
+            Assert.AreEqual(43, ((Nn.Atom)result).Item);
+        }
+
+        [TestMethod]
+        public void TarEqualityDetectsEquality()
+        {
+            var result = Nock.Nock.tar(N(N(1, 1), N(5, 0, 1)));
+
+            Assert.IsInstanceOfType(result, typeof(Nn.Atom));
+            Assert.AreEqual(0, ((Nn.Atom)result).Item);
+        }
+
+        [TestMethod]
+        public void TarEqualityDetectsInEquality()
+        {
+            var result = Nock.Nock.tar(N(N(1, 2), N(5, 0, 1)));
+
+            Assert.IsInstanceOfType(result, typeof(Nn.Atom));
+            Assert.AreEqual(1, ((Nn.Atom)result).Item);
+        }
+
+        [TestMethod]
+        public void TarWutDetectsAtom()
+        {
+            // let a = 1
+            // let b = [0 1]
+            //
+            // Given that:      *[a 3 b]  =>  ?*[a b]
+            // Substitution:    *[1 3 [0 1]]
+            // Produces to:     ?*[1 0 1]
+            //
+            // Given that:      *[a 0 b]  =>  /[b a]
+            // Substitution:    *[1 0 1]
+            // Produces to:     /[1 1]
+            //
+            // Given that:      /[1 a]  =>  a
+            // Substitution:    /[1 1]
+            // Produces to:     1
+            //
+            // Given that:      ?a  =>  1
+            // Substitution:    ?1
+            // Produces to:     1
+
+            var result = Nock.Nock.tar(N(1, N(3, 0, 1)));
+
+            Assert.IsInstanceOfType(result, typeof(Nn.Atom));
+            Assert.AreEqual(N(1), result);
+        }
+
+        [TestMethod]
+        public void TarWutDetectsCell()
+        {
+            var result = Nock.Nock.tar(N(N(1, 2), N(3, 0, 1)));
+
+            Assert.IsInstanceOfType(result, typeof(Nn.Atom));
+            Assert.AreEqual(0, ((Nn.Atom)result).Item);
+        }
+
+        [TestMethod]
+        public void TarFas()
+        {
+            // Test from https://github.com/cgyarvin/urbit/blob/master/doc/book/1-nock.markdown
+            // Section marked "Line 18:"
+            //[[4 5] [6 14 15]] [0 7]   =>  [14 15]
+            var n = N(N(N(4, 5), N(6, 14, 15)), N(0, 7));
+            var result = Nock.Nock.tar(n);
+            Assert.AreEqual(N(14, 15), result);
+        }
+
+        [TestMethod]
+        public void TarDualFormulaApplication()
+        {
+            // a = 1
+            // b = 0
+            // c = 1
+            // d = [0 1]
+            // *[a [b c] d]     [*[a b c] *[a d]]
+            // result = [1 1]
+            // This makes *[a b c] be *[1 0 1] which evaluates to 1
+            // and this makes [a d] be *[1 [0 1]] which is equivalent to *[1 0 1] and thus also evaluates to 1
+
+            var result = Nock.Nock.tar(N(1, N(0, 1), N(0, 1)));
+
+            Assert.IsInstanceOfType(result, typeof(Nn.Cell));
+            Assert.AreEqual(N(1, 1), result);
+        }
+
+        [TestMethod]
+        public void TarRecursion()
+        {
+            // Test from https://github.com/cgyarvin/urbit/blob/master/doc/book/1-nock.markdown
+            // Section marked "Line 20:"
+            // (77 [2 [1 42] [1 1 153 218]])    =>  [153 218]
+            var n = N(77, N(2, N(1, 42), N(1, 1, 153, 218)));
+            var result = Nock.Nock.tar(n);
+            Assert.AreEqual(N(153, 218), result);
+        }
         #endregion
+
+        [TestMethod]
+        public void Playground()
+        {
+            //[[4 5] [6 14 15]] [0 7]   =>  [14 15]
+            var n = N(N(N(4, 5), N(6, 14, 15)), N(0, 7));
+            var result = Nock.Nock.tar(n);
+            Assert.AreEqual(N(14, 15), result);
+        }
 
         [TestMethod]
         public void BasicNockTest1()
         {
+            
+            
             var result = Nock.Nock.tar(N(N(19, 42), N(0, 3)));
 
             Assert.IsInstanceOfType(result, typeof(Nn.Atom));
-            Assert.AreEqual(42, ((Nn.Atom) result).Item);
+            Assert.AreEqual(N(42), result);
         }
 
         [TestMethod]

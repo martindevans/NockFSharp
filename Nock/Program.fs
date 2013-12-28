@@ -1,11 +1,19 @@
 ﻿//http://www.urbit.org/2013/11/18/urbit-is-easy-ch2.html
 
 namespace Nock
+
+open System.Threading.Tasks
+
 module Nock =
 
     type noun = 
         | Atom of int
         | Cell of noun * noun
+
+    let AsyncCell (a : (_ -> noun), b : (_ -> noun)) : noun =
+        let left = Task.Factory.StartNew(a);
+        let right = Task.Factory.StartNew(b);
+        Cell(left.Result, right.Result)
 
     let wut noun =
         match noun with
@@ -35,12 +43,16 @@ module Nock =
                 fas(Cell(Atom(3), fas(Cell(Atom((a - 1) / 2), b))))                             // /[(a + a + 1) b] /[3 /[a b]]
         | _ -> raise (System.ArgumentException("Invalid fas"))
 
-    let rec tar noun = 
+    let rec tar noun : noun = 
         match noun with
-        | Cell (a, Cell(Cell(b, c), d)) -> Cell(tar(Cell(a, Cell(b, c))), tar(Cell(a, d)))      // *[a [b c] d]     [*[a b c] *[a d]]
+        | Cell (a, Cell(Cell(b, c), d)) ->
+            //Cell(tar(Cell(a, Cell(b, c))), tar(Cell(a, d)))                                   // *[a [b c] d]     [*[a b c] *[a d]]
+            AsyncCell((fun _ -> tar(Cell(a, Cell(b, c)))), (fun _ -> tar(Cell(a, d))))
         | Cell (a, Cell(Atom(0), b)) -> fas(Cell(b, a))                                         // *[a 0 b]         /[b a]
         | Cell (a, Cell(Atom(1), b)) -> b                                                       // *[a 1 b]         b
-        | Cell (a, Cell(Atom(2), Cell(b, c))) -> tar(Cell(tar(Cell(a, b)), tar(Cell(a, c))))    // *[a 2 b c]       *[*[a b] *[a c]]
+        | Cell (a, Cell(Atom(2), Cell(b, c))) -> 
+            //tar(Cell(tar(Cell(a, b)), tar(Cell(a, c))))                                       // *[a 2 b c]       *[*[a b] *[a c]]
+            tar(AsyncCell((fun _ -> tar(Cell(a, b))), (fun _ -> tar(Cell(a, c)))));
         | Cell (a, Cell(Atom(3), b)) -> wut(tar(Cell(a, b)))                                    // *[a 3 b]         ?*[a b]
         | Cell (a, Cell(Atom(4), b)) -> lus(tar(Cell(a, b)))                                    // *[a 4 b]         +*[a b]
         | Cell (a, Cell(Atom(5), b)) -> tis(tar(Cell(a, b)))                                    // *[a 5 b]         =*[a b]
