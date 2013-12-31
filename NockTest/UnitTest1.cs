@@ -260,6 +260,13 @@ namespace NockTest
             var result = Nock.Nock.tar(n);
             Assert.AreEqual(N(153, 218), result);
         }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentException))]
+        public void TarAtomFails()
+        {
+            Nock.Nock.tar(N(1));
+        }
         #endregion
 
         [TestMethod]

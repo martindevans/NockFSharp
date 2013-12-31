@@ -10,10 +10,10 @@ module Nock =
         | Atom of int
         | Cell of noun * noun
 
-    let AsyncCell (a : (_ -> noun), b : (_ -> noun)) : noun =
-        let left = Task.Factory.StartNew(a);
-        let right = Task.Factory.StartNew(b);
-        Cell(left.Result, right.Result)
+//    let private AsyncCell (a : (_ -> noun), b : (_ -> noun)) : noun =
+//        let left = Task.Factory.StartNew(a);
+//        let right = Task.Factory.StartNew(b);
+//        Cell(left.Result, right.Result)
 
     let wut noun =
         match noun with
@@ -56,11 +56,25 @@ module Nock =
         | Cell (a, Cell(Atom(3), b)) -> wut(tar(Cell(a, b)))                                    // *[a 3 b]         ?*[a b]
         | Cell (a, Cell(Atom(4), b)) -> lus(tar(Cell(a, b)))                                    // *[a 4 b]         +*[a b]
         | Cell (a, Cell(Atom(5), b)) -> tis(tar(Cell(a, b)))                                    // *[a 5 b]         =*[a b]
-        | Cell (a, Cell(Atom(6), Cell(b, Cell(c, d)))) -> tar(Cell(a, Cell(Atom(2), Cell(Cell(Atom(0), Atom(1)), Cell(Atom(2), Cell(Cell(Atom(1), Cell(c, d)), Cell(Cell(Atom(1), Atom(0)), Cell(Atom(2), Cell(Cell(Atom(1), Cell(Atom(2), Atom(3))), Cell(Cell(Atom(1), Atom(0)), Cell(Atom(4), Cell(Atom(4), b))))))))))))     // *[a 6 b c d]     *[a 2 [0 1] 2 [1 c d] [1 0] 2 [1 2 3] [1 0] 4 4 b]
-        | Cell (a, Cell(Atom(7), Cell(b, c))) -> tar(Cell(a, Cell(Atom(2), Cell(b, Cell(Atom(1), c)))))                                                            // *[a 7 b c]       *[a 2 b 1 c]
-        | Cell (a, Cell(Atom(8), Cell(b, c))) -> tar(Cell(a, Cell(Atom(7), Cell(Cell(Cell(Atom(7), Cell(Cell(Atom(0), Atom(1)), b)), Cell(Atom(0), Atom(1))), c))))       // *[a 8 b c]       *[a 7 [[7 [0 1] b] 0 1] c]                                                          //<===========
-        | Cell (a, Cell(Atom(9), Cell(b, c))) -> tar(Cell(a, Cell(Atom(7), Cell(c, Cell(Atom(2), Cell(Cell(Atom(0), Atom(1)), Cell(Atom(0), b)))))))               // *[a 7 c 2 [0 1] 0 b]
-        | Cell (a, Cell(Atom(10), Cell(Cell(b, c), d))) -> tar(Cell(a, Cell(Atom(8), Cell(c, Cell(Atom(7), Cell(Cell(Atom(0), Atom(3)), d))))))                    // *[a 10 [b c] d]  *[a 8 c 7 [0 3] d]
+        | Cell (a, Cell(Atom(6), Cell(b, Cell(c, d)))) ->
+            tar(Cell(a, Cell(Atom(2), Cell(Cell(Atom(0), Atom(1)), Cell(Atom(2), Cell(Cell(Atom(1), Cell(c, d)), Cell(Cell(Atom(1), Atom(0)), Cell(Atom(2), Cell(Cell(Atom(1), Cell(Atom(2), Atom(3))), Cell(Cell(Atom(1), Atom(0)), Cell(Atom(4), Cell(Atom(4), b))))))))))))     // *[a 6 b c d]     *[a 2 [0 1] 2 [1 c d] [1 0] 2 [1 2 3] [1 0] 4 4 b]
+        | Cell (a, Cell(Atom(7), Cell(b, c))) ->
+            //tar(Cell(a, Cell(Atom(2), Cell(b, Cell(Atom(1), c)))))                                                            // *[a 7 b c]       *[a 2 b 1 c]
+            tar(Cell(tar(Cell(a, b)), c))                                                                                       // *[a 7 b c]       *[*[a b] c]
+        | Cell (a, Cell(Atom(8), Cell(b, c))) ->
+            //tar(Cell(a, Cell(Atom(7), Cell(Cell(Cell(Atom(7), Cell(Cell(Atom(0), Atom(1)), b)), Cell(Atom(0), Atom(1))), c))))        // *[a 8 b c]       *[a 7 [[7 [0 1] b] 0 1] c]
+            tar(Cell(Cell(tar(Cell(a, b)), a), c))                                                                                      // *[a 8 b c]       *[[*[a b] a] c]
+        | Cell (a, Cell(Atom(9), Cell(b, c))) ->
+            //tar(Cell(a, Cell(Atom(7), Cell(c, Cell(Atom(2), Cell(Cell(Atom(0), Atom(1)), Cell(Atom(0), b)))))))               // *[a 9 b c]       *[a 7 c 2 [0 1] 0 b]
+            let tar_ac = tar(Cell(a, c))
+            tar(Cell(tar_ac, tar(Cell(tar_ac, Cell(Atom(0), b)))))                                                              // *[a 9 b c]       *[*[a c] *[*[a c] 0 b]]
+        | Cell (a, Cell(Atom(10), Cell(Cell(b, c), d))) -> 
+            tar(Cell(a, Cell(Atom(8), Cell(c, Cell(Atom(7), Cell(Cell(Atom(0), Atom(3)), d))))))                      // *[a 10 [b c] d]  *[a 8 c 7 [0 3] d]
+
+            //This version is the reduced/optimised version, but it's untested so for now it's commented out
+            //tar(Cell(tar(Cell(Cell(tar(Cell(a, c)), a), Cell(Atom(0), Atom(3)))), d))                                   // *[a 10 [b c] d]  *[*[[*[a c] a] 0 3] d]
+
+                                                                                                                    
         | Cell (a, Cell(Atom(10), Cell(b, c))) -> tar(Cell(a, c))                                                                                                  // *[a 10 b c]      *[a c]
 
         | Atom a -> raise (System.ArgumentException("Cannot nock an Atom"))                     // *a               *a
